@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
-import {View, FlatList, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Keyboard} from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
+import React, {useState} from 'react';
+import {FlatList, Keyboard, KeyboardAvoidingView, Platform, View} from 'react-native';
+import {Button, TextInput} from 'react-native-paper';
 import MessageBubble from './MessageBubble';
 import AudioRecorder from "./AudioRecorder";
+import axios from 'axios';
+import {uniqueNameFile} from "../services/generateNameService";
 //import { getBotResponse } from './api'; // Import de la fonction API
 
 const ChatBot = () => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
+
+    const adressIp = '172.20.10.11';
 
     const sendMessage = async () => {
         if (message.trim() === '') return;
@@ -17,12 +21,28 @@ const ChatBot = () => {
 
         setMessage(''); // Clear input
 
-        const botResponse = /*await getBotResponse(userMessage.text);*/ "Hello, I am a bot!";
+        const textFileName = uniqueNameFile('text');
 
-        setMessages(prevMessages => [
-            ...prevMessages,
-            { id: Date.now(), text: botResponse, sender: 'bot' }
-        ]);
+        try {
+            const response = await axios.post(`http://${adressIp}:8000/upload-text/`, {
+                text: userMessage.text,
+                filename: textFileName
+            });
+
+            const botResponse = /*await getBotResponse(userMessage.text);*/ "Hello, I am a bot!";
+
+            setMessages(prevMessages => [
+                ...prevMessages,
+                { id: Date.now(), text: botResponse, sender: 'bot' }
+            ]);
+        } catch (error) {
+            console.error("Erreur lors de l'envoi du message à l'API :", error);
+            // Ajouter un message d'erreur dans l'interface
+            setMessages(prevMessages => [
+                ...prevMessages,
+                { id: Date.now(), text: "Erreur lors de l'envoi du message", sender: 'bot' }
+            ]);
+        }
     };
 
     const handleAudioRecorded = (audioUri) => {
@@ -37,6 +57,28 @@ const ChatBot = () => {
         // Logique d'envoi du fichier audio au backend
         console.log("Audio sent to server:", audioUri);
         // Ajoute ici la logique pour l'envoyer via FormData à ton backend.
+        const formData = new FormData();
+
+        const audioFileName = uniqueNameFile('audio');
+
+        formData.append('file', {
+            uri: audioUri,
+            type: 'audio/wav',
+            name: audioFileName
+        });
+
+        try {
+            const response = await axios.post(`http://${adressIp}:8000/upload-file/`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            console.log("Audio sent to server:", response.data);
+        } catch (error) {
+            console.error("Error sending audio:", error);
+        }
+
+
     };
 
     const dismissKeyboard = () => {
