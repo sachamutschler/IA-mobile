@@ -5,13 +5,12 @@ import MessageBubble from './MessageBubble';
 import AudioRecorder from "./AudioRecorder";
 import axios from 'axios';
 import {uniqueNameFile} from "../services/generateNameService";
-//import { getBotResponse } from './api'; // Import de la fonction API
 
 const ChatBot = () => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState([]);
 
-    const adressIp = '172.20.10.11';
+    const adressIp = '10.74.255.70';
 
     const sendMessage = async () => {
         if (message.trim() === '') return;
@@ -24,7 +23,7 @@ const ChatBot = () => {
         const textFileName = uniqueNameFile('text');
 
         try {
-            const response = await axios.post(`http://${adressIp}:8000/upload-text/`, {
+            const response = await axios.post(`http://${adressIp}:8086/upload-text/`, {
                 text: userMessage.text,
                 filename: textFileName
             });
@@ -46,17 +45,30 @@ const ChatBot = () => {
     };
 
     const handleAudioRecorded = (audioUri) => {
-        const userMessage = { id: Date.now(), text: 'Audio message', sender: 'user', type: 'audio', uri: audioUri };
+        const userMessage = {
+            id: Date.now(),
+            text: 'Audio message',
+            sender: 'user',
+            type: 'audio',
+            uri: audioUri
+        };
         setMessages([...messages, userMessage]);
 
         // Envoyer l'audio au serveur ou le traiter ici
         sendAudioToServer(audioUri);
     };
 
+    const manageResponse = async (apiResponse) => {
+        if (apiResponse.prediction === "Non valide") {
+            setMessages(prevMessages => [
+                ...prevMessages,
+                { id: Date.now(), text: "Votre demande n'est pas valide, merci d'indiquer un lieu de départ ainsi qu'un lieu d'arrivée.", sender: 'bot' }
+            ]);
+        }
+    }
+
     const sendAudioToServer = async (audioUri) => {
-        // Logique d'envoi du fichier audio au backend
         console.log("Audio sent to server:", audioUri);
-        // Ajoute ici la logique pour l'envoyer via FormData à ton backend.
         const formData = new FormData();
 
         const audioFileName = uniqueNameFile('audio');
@@ -68,12 +80,13 @@ const ChatBot = () => {
         });
 
         try {
-            const response = await axios.post(`http://${adressIp}:8000/upload-file/`, formData, {
+            const response = await axios.post(`http://${adressIp}:8086/upload-file/`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
             });
             console.log("Audio sent to server:", response.data);
+            await manageResponse(response.data);
         } catch (error) {
             console.error("Error sending audio:", error);
         }
