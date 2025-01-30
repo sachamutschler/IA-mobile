@@ -42,7 +42,7 @@ const MessageBubble = ({ message }) => {
                 ) : (
                     <>
                         <Text>{message.text}</Text>
-			<DisplayTrip trip_data={message.trip.data}></DisplayTrip>
+			            {message.trip != undefined && <DisplayTrip trip_data={message.trip.data}></DisplayTrip> }
                     </>
                 )}
             </Card.Content>
