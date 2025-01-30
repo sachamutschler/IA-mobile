@@ -1,10 +1,11 @@
 import React, {useState, useEffect} from 'react';
 import { Card, Text, IconButton } from 'react-native-paper';
 import { Audio } from 'expo-av';
+import DisplayTrip from './DisplayTrip';
 
 const MessageBubble = ({ message }) => {
     const [sound, setSound] = useState(null);
-
+    console.log(message)
     const playSound = async () => {
         if (!message.uri) return;
 
@@ -37,9 +38,12 @@ const MessageBubble = ({ message }) => {
         }}>
             <Card.Content>
                 {message.type === 'audio' ? (
-                    <IconButton icon="play" onPress={playSound} size={28}> > </IconButton>
+                    <IconButton icon="play" onPress={playSound} size={28}>  </IconButton>
                 ) : (
-                    <Text>{message.text}</Text>
+                    <>
+                        <Text>{message.text}</Text>
+			<DisplayTrip trip_data={message.trip.data}></DisplayTrip>
+                    </>
                 )}
             </Card.Content>
         </Card>
